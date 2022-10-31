@@ -1,0 +1,148 @@
+function [flag_landing]=landing_judge(closed_list, open_list)
+global Hmin trapcount
+
+% Hmin: the lowest H before current iteration
+% trapcount: the count of iterations that Hmin does not change
+
+Htemp=Hmin; % set a temporary variable Htemp = Hmin
+[Hmin,~]=min(closed_list(:,6));     % find new Hmin
+dH=Htemp-Hmin;
+
+if dH~=0    % Hmin become lower -> getting closer to the goal
+    trapcount=0;    % refresh trapcount
+else
+    trapcount=trapcount+1;
+end
+
+if trapcount>500 || isempty(open_list)
+    flag_landing=true;
+else
+    flag_landing=false;
+end
+% fprintf('%d\n',trapcount)
+
+%%
+function [flag_landing]=landing_judge(closed_list, open_list)
+flying distance =sqrt((x_new start-x_current)^2+(y_new start-current)^2;
+heightmap=heightmap(127:2595,107:4668)*0.05;
+total map distance=sqrt((2595-127)^2+(4688-107)^2;
+judgment distance=total map distance*0.3;
+if flying distance>=judgment distance
+    if node_current(gx)<0.2&&node_current(gx)>-0.2&&node_current(gy)<0.2&&node_current(gy)>-0.2
+        node_current(1:3)=heightmap(1:3);
+        new start_landing(1:3)=node_current(1:3);
+    end
+end
+        
+%%
+function [dummy_goal,k]=goal_gen(node_current,node_goal)
+global mv res
+z_curr=node_current(3);
+
+dummy_goal=node_goal;
+C2=1.5/res;
+C3=0.5/res;
+
+% phase 1: mv<C3 -> desired z = z_curr+1 -> takeoff
+% phase 2: C3<mv<C2 -> desired z = z_curr -> fly forward
+% phase 3: mv>C2 -> desired z = z_goal -> back to A* (landing)
+
+if mv<C2
+    if mv<C3
+        z=z_curr+1; k=20;
+    else
+        z=z_curr; k=20;
+    end
+else
+    z=1; k=1;
+end
+dummy_goal(3)=z;
+%%
+function accessible=accessibility_check(curr_pos,next_pos,gx,gy)
+x_curr=curr_pos(1); y_curr=curr_pos(2);  yaw_curr=curr_pos(4);
+x_next=next_pos(1); y_next=next_pos(2);  yaw_next=next_pos(4);
+% z_curr=curr_pos(3);z_next=next_pos(3);
+if abs(yaw_next-yaw_curr)>45
+    accessible=false;
+else
+    gx_next=gx(x_next,y_next);
+    gy_next=gy(x_next,y_next);
+    var_gx=gx_next-gx(x_curr,y_curr);
+    var_gy=gy_next-gy(x_curr,y_curr);
+    
+    max_climb=5.0;
+    max_descend=-5.2;
+    
+%     grad_curr=[gx(x_curr,y_curr),gy(x_curr,y_curr)];
+%     grad_next=[gx(x_next,y_next),gy(x_next,y_next)];
+    
+% +45deg: (gx_next+gy_next)/sqrt(2)
+% -45deg: (gx_next-gy_next)/sqrt(2)
+    
+    switch yaw_next
+        case 90
+            traversable=var_gy<max_climb&&var_gy>max_descend;
+        case -90
+            traversable=var_gy<max_climb&&var_gy>max_descend;
+        case 0
+            traversable=var_gx<max_climb&&var_gx>max_descend;
+        case 180
+            traversable=var_gx<max_climb&&var_gx>max_descend;
+        case 45
+            traversable=(var_gx+var_gy)/sqrt(2)<max_climb&&(var_gx+var_gy)/sqrt(2)>max_descend;
+        case -135
+            traversable=(var_gx+var_gy)/sqrt(2)<max_climb&&(var_gx+var_gy)/sqrt(2)>max_descend;
+        case 135
+            traversable=(var_gx-var_gy)/sqrt(2)<max_climb&&(var_gx-var_gy)/sqrt(2)>max_descend;
+        case -45
+            traversable=(var_gx-var_gy)/sqrt(2)<max_climb&&(var_gx-var_gy)/sqrt(2)>max_descend;
+    end
+%     accessible=traversable&&abs(z_curr-z_next)<5;
+    accessible=traversable;
+%     fprintf('tr: %d\n',traversable);
+%     if ~traversable
+%         plot(y_next,x_next,'.','Color',[0.5 0 0.9]);
+%         pause(0.01)
+%     end
+    % yellow -> unstandable; purple -> untraversable; red -> both
+end
+
+function yaw=coord2yaw(x,y)
+yaw=atan2d(y,x);
+if yaw>=-22.5 && yaw<22.5
+    yaw=0;
+elseif yaw>=22.5 && yaw<67.5
+    yaw=45;
+elseif yaw>=67.5 && yaw<112.5
+    yaw=90;
+elseif yaw>=112.5 && yaw<157.5
+    yaw=135;
+elseif yaw>=157.5 && yaw<=180 || yaw>-157.5 && yaw<=-180
+    yaw=180;
+elseif yaw>=-67.5 && yaw<-22.5
+    yaw=-45;
+elseif yaw>=-112.5 && yaw<-67.5
+    yaw=-90;
+elseif yaw>=-157.5 && yaw<-112.5
+    yaw=-135;
+end
+%%
+function yaw=coord2yaw(x,y)
+yaw=atan2d(y,x);
+if yaw>=-22.5 && yaw<22.5
+    yaw=0;
+elseif yaw>=22.5 && yaw<67.5
+    yaw=45;
+elseif yaw>=67.5 && yaw<112.5
+    yaw=90;
+elseif yaw>=112.5 && yaw<157.5
+    yaw=135;
+elseif yaw>=157.5 && yaw<=180 || yaw>-157.5 && yaw<=-180
+    yaw=180;
+elseif yaw>=-67.5 && yaw<-22.5
+    yaw=-45;
+elseif yaw>=-112.5 && yaw<-67.5
+    yaw=-90;
+elseif yaw>=-157.5 && yaw<-112.5
+    yaw=-135;
+end
